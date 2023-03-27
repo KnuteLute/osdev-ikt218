@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "descriptor_tables.h"
 
 // Define entry point in asm to prevent C++ mangling
 extern "C"{
@@ -111,5 +112,7 @@ void kernel_main(void)
     terminal_initialize();
  
 	/* Newline support is left as an exercise. */
-	terminal_writestring("Hello, kernel World!\n");
+	init_gdt();
+	terminal_writestring("Hello, you have now a GDT!\n");
+	
 }
