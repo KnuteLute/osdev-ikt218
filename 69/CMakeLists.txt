@@ -171,8 +171,16 @@ file(GLOB_RECURSE OS_MODULE_KERNEL_SOURCES
         RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         src/kernel/src/*.cpp
         src/kernel/src/*.c
+        src/kernel/src/common.cpp
         src/kernel/src/cpu/descriptor_table.asm
-)
+        src/kernel/src/cpu/isr_asm.asm
+        src/kernel/src/drivers/keyboad/keyboard.cpp
+        src/kernel/src/drivers/keyboad/keyboard.h
+        src/kernel/src/drivers/keyboad/timer.cpp
+        src/kernel/src/drivers/keyboad/timer.h
+        src/kernel/src/drivers/keyboad/cpu.h
+
+)       
 # Set the output binary name
 set(OS_MODULE_KERNEL_BINARY kernel.bin)
 # Defines the linker location

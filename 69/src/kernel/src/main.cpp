@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "descriptor_tables.h"
+#include "interrupts.h"
+#include "drivers/keyboard/keyboard.h"
 
 // Define entry point in asm to prevent C++ mangling
 extern "C"{
@@ -13,6 +15,11 @@ extern "C"{
 #if !defined(__i386__)
 #error "This tutorial needs to be compiled with a ix86-elf compiler"
 #endif
+
+
+
+
+
 
 enum vga_color {
 	VGA_COLOR_BLACK = 0,
@@ -32,6 +39,8 @@ enum vga_color {
 	VGA_COLOR_LIGHT_BROWN = 14,
 	VGA_COLOR_WHITE = 15,
 };
+
+
  
 static inline uint8_t vga_entry_color(enum vga_color fg, enum vga_color bg) {
 	return fg | bg << 4;
@@ -106,6 +115,72 @@ void terminal_writestring(const char* data)
 void printf(const char* data){
 
 }
+void print_int(int data){
+	char str[10];
+	int i = 0;
+	while(data > 0){
+		str[i] = data % 10 + '0';
+		data /= 10;
+		i++;
+	}
+	str[i] = '\0';
+	for(int j = i - 1; j >= 0; j--){
+		terminal_putchar(str[j]);
+	}
+}
+
+
+void convert_unint8_to_str(uint8_t data, char* str){
+	int i = 0;
+	while(data > 0){
+		str[i] = data % 10 + '0';
+		data /= 10;
+		i++;
+	}
+	str[i] = '\0';
+	for(int j = i - 1; j >= 0; j--){
+		terminal_putchar(str[j]);
+	}
+}
+
+class OperatingSystem {
+    int tick = 0;
+
+public:
+    OperatingSystem(vga_color color) {
+
+
+    }
+
+    void init() {
+
+        terminal_writestring("Initializing UiA Operating System....\n");
+    }
+
+    void debug_print(char *str) {
+        terminal_writestring(str);
+		terminal_writestring("\n");
+	}
+    
+
+    void interrupt_handler_3(registers_t regs) {
+        terminal_writestring("Called Interrupt Handler 3!\n");
+    }
+
+    void interrupt_handler_4(registers_t regs) {
+        terminal_writestring("Called Interrupt Handler 4!\n");
+    }
+
+    void timer() {
+        tick++;
+        if (tick % 100 == 0) {
+            terminal_writestring("(Every Second) Tick: ");
+            print_int(tick);
+            terminal_writestring("\n");
+        }
+
+    }
+};
 
 void kernel_main(void)
 {
@@ -113,6 +188,60 @@ void kernel_main(void)
  
 	/* Newline support is left as an exercise. */
 	init_gdt();
+	init_idt();
+	init_irq();
+
 	terminal_writestring("Hello, you have now a GDT!\n");
+	// Create operating system object
+    auto os = OperatingSystem(VGA_COLOR_RED);
+    os.init();
+
+    // Do some printing!
+    os.debug_print("Hello World!");
+
+    // Create some interrupt handlers for 3
+    register_interrupt_handler(3,[](registers_t* regs, void* context){
+        auto* os = (OperatingSystem*)context;
+        os->interrupt_handler_3(*regs);
+    }, (void*)&os);
+
+    // Create some interrupt handler for 4
+    register_interrupt_handler(4,[](registers_t* regs, void* context){
+        auto* os = (OperatingSystem*)context;
+        os->interrupt_handler_4(*regs);
+    }, (void*)&os);
+
+
+    // Fire interrupts! Should trigger callback above
+    asm volatile ("int $0x3");
+    asm volatile ("int $0x4");
+
+    // Print that number.
+    os.debug_print("1337");
+
+
+    // Disable interrutps
+    asm volatile("sti");
+	/*
+    // Create a timer on IRQ0 - System Timer
+    init_timer(1, [](registers_t*regs, void* context){
+        auto* os = (OperatingSystem*)context;
+        os->timer();
+    }, &os);
+	*/
+	
+    // Hook Keyboard
+    UiAOS::IO::Keyboard::hook_keyboard([](uint8_t scancode, void* context){
+        auto* os = (OperatingSystem*)context;
+        terminal_writestring("Keyboard Event: ");
+		terminal_putchar(UiAOS::IO::Keyboard::scancode_to_ascii(scancode));
+        //terminal_write(UiAOS::IO::Keyboard::scancode_to_ascii(scancode),1);
+        terminal_writestring(" (");
+        print_int(scancode);
+        terminal_writestring(")\n");
+        
+    }, &os);
+	
+
 	
 }
