@@ -3,6 +3,8 @@
 #include "common.h"
 #include <cstddef>
 
+// static int_handler_t int_handlers[256];
+
 extern "C" {
   extern void idt_flush(uint32_t);
 }

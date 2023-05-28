@@ -2,6 +2,7 @@
 
 extern "C" {
   extern void gdt_flush(uint32_t gdt_ptr);
+  static void gdt_set_gate(int32_t,uint32_t,uint32_t,uint8_t,uint8_t);
 }
 
 

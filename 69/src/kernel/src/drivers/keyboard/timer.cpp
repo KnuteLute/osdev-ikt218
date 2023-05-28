@@ -15,7 +15,7 @@ uint32_t tick = 0;
 /// \param freq - Which frequence (hz) the timer should run at
 /// \param handler - The callback handler
 /// \param context  - Context you wish to have in the callback handler
-void init_timer(uint32_t freq, isr_t handler, void* context) {
+void UiAOS::CPU::PIT::init_timer(uint32_t freq, isr_t handler, void* context) {
     // Firstly, register our timer callback.
     register_interrupt_handler(IRQ0, handler, context);
 

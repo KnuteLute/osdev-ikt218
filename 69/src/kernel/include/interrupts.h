@@ -138,6 +138,7 @@ static int_handler_t int_handlers[IDT_ENTRIES];
 static int_handler_t irq_handlers[IRQ_COUNT];
 
 
+
 #define IRQ_COUNT 16
 
 

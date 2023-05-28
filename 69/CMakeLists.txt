@@ -115,6 +115,10 @@ target_include_directories(${OS_MODULE_STDLIB_NAME}
     PUBLIC src/stdlib/include
 
 )
+
+#include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/kernel/src/drivers/keyboard)
+
+
 target_link_libraries(${OS_MODULE_STDLIB_NAME} PUBLIC
         ${OS_LIBRARIES}
 )
@@ -171,14 +175,20 @@ file(GLOB_RECURSE OS_MODULE_KERNEL_SOURCES
         RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         src/kernel/src/*.cpp
         src/kernel/src/*.c
-        src/kernel/src/common.cpp
+        src/kernel/src/main.cpp
+        src/kernel/src/cpu/memory/*.c
+        # src/kernel/src/common.cpp
         src/kernel/src/cpu/descriptor_table.asm
+        # src/kernel/src/cpu/gdt.cpp
+        # src/kernel/src/cpu/idt.cpp
+        # src/kernel/src/cpu/irq.cpp
+        # src/kernel/src/cpu/isr.cpp
         src/kernel/src/cpu/isr_asm.asm
-        src/kernel/src/drivers/keyboad/keyboard.cpp
-        src/kernel/src/drivers/keyboad/keyboard.h
-        src/kernel/src/drivers/keyboad/timer.cpp
-        src/kernel/src/drivers/keyboad/timer.h
-        src/kernel/src/drivers/keyboad/cpu.h
+        # src/kernel/src/drivers/keyboard/keyboard.cpp
+        # src/kernel/src/drivers/keyboard/keyboard.h
+        # src/kernel/src/drivers/keyboard/timer.cpp
+        # src/kernel/src/drivers/keyboard/timer.h
+        
 
 )       
 # Set the output binary name

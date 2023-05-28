@@ -45,7 +45,7 @@ void init_idt();
 void gdt_load();
 void idt_load();
 
-void gdt_set_gate(int32_t num, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran);
+//void gdt_set_gate(int32_t num, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran);
 
 
 
