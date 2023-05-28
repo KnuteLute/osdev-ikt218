@@ -1,4 +1,5 @@
 # IKT218 - Operating System Developer Repository
+ask sin beskjed
 
 ## Description
 This repository holds the code needed for students to partake in the lab assignments in IKT218 at the University of Agder, Norway. At the end of the semester, each student will make a pull request to this repository, which should end up with a collection of operating systems, later to be hosted at [https://uiaict.github.io/ikt218-osdev/](https://uiaict.github.io/ikt218-osdev/)
