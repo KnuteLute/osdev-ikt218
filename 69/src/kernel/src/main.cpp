@@ -278,7 +278,7 @@ void kernel_main(void)
     // Do some printing!
     os.debug_print("Hello World!");
 	print_new_line();
-
+	terminal_writestring("Hello, you have now a IDT!");
 
 	// register_interrupt_handler(1,[](registers_t* regs, void* context){
     //     auto* os = (OperatingSystem*)context;
