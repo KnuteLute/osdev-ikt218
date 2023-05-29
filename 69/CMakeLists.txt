@@ -116,7 +116,7 @@ target_include_directories(${OS_MODULE_STDLIB_NAME}
 
 )
 
-#include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/kernel/src/drivers/keyboard)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/kernel/src/memory)
 
 
 target_link_libraries(${OS_MODULE_STDLIB_NAME} PUBLIC
@@ -146,6 +146,7 @@ set(OS_MODULE_BOOT_NAME ${OS_KERNEL_NAME}-boot)
 set(OS_MODULE_BOOT_SOURCES
         src/boot/src/boot.asm
         src/boot/src/boot.cpp
+        src/boot/src/boot.h
 )
 # Creates a library for our multi-boot section
 add_library(${OS_MODULE_BOOT_NAME} ${OS_MODULE_BOOT_SOURCES})
@@ -177,6 +178,8 @@ file(GLOB_RECURSE OS_MODULE_KERNEL_SOURCES
         src/kernel/src/*.c
         src/kernel/src/main.cpp
         src/kernel/src/cpu/memory/*.c
+        src/stdlib/src/bitset.cpp
+        src/stdlib/src/exception.cpp
         # src/kernel/src/common.cpp
         src/kernel/src/cpu/descriptor_table.asm
         # src/kernel/src/cpu/gdt.cpp

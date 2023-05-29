@@ -3,8 +3,9 @@
 
 
 #include <stdint.h>
-#include "stdlib/include/bitset.h"
-#include "cpu.h"
+//#include "stdlib/include/bitset.h"
+#include "bitset.h"
+#include "../drivers/keyboard/cpu.h"
 #include "kmalloc.h"
 
 
@@ -74,7 +75,7 @@ namespace UiAOS::Memory {
           CR3 register.
         **/
         void switch_page_directory(UiAOS::Memory::PageDirectory *dir);
-        static void page_fault(UiAOS::CPU::ISR::registers_t* regs, void*);
+        static void page_fault(registers_t* regs, void*);
 
         bool set_directory(UiAOS::Memory::PageDirectory* dir);
 
@@ -89,7 +90,7 @@ namespace UiAOS::Memory {
     /**
       Handler for page faults.
     **/
-    void page_fault(UiAOS::CPU::ISR::registers_t *regs, void *);
+    void page_fault(registers_t *regs, void *);
 
 
 }

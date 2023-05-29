@@ -1,10 +1,10 @@
 #include "paging.h"
 #include "memory.h"
 
-#include "../drivers/monitor/monitor_2.h"
+#include "../../stdlib/include/bitset.h"
+#include "../../stdlib/include/exception.h"
+#include "../../boot/src/boot.h"
 
-#include "stdlib/cpp/exception.h"
-#include "boot.h"
 void init_paging()
 {
 
@@ -15,8 +15,7 @@ void init_paging()
     UiAOS::Memory::Paging(0x1000000); // TODO maybe set dynamically
 }
 
-UiAOS::Memory::Paging::Paging(uint32_t mem_end_page)
-: frames(mem_end_page, mem_end_page / 0x100)
+UiAOS::Memory::Paging::Paging(uint32_t mem_end_page) : frames(mem_end_page, mem_end_page / 0x100)
 {
     // Allocate memory for the page directory.
     kernel_directory = (PageDirectory*)UiAOS::std::Memory::kmalloc_a(sizeof(PageDirectory));
@@ -34,7 +33,7 @@ UiAOS::Memory::Paging::Paging(uint32_t mem_end_page)
     while (i < UiAOS::std::Memory::placement_address)
     {
         // Kernel code is readable but not writeable from userspace.
-        uint32_t idx = frames.first_available_frame(); // idx is now the index of the first free frame.
+        uint32_t idx = frames.UiAOS::std::Bitset::Bitset::first_available_frame(); // idx is now the index of the first free frame.
         if(kernel_directory->get_page(i, 1)->alloc_frame(idx, 0, 0)){
             // Allocated the frame
             frames.set_frame(idx); // this frame is now ours!
@@ -43,7 +42,7 @@ UiAOS::Memory::Paging::Paging(uint32_t mem_end_page)
     }
     // Before we enable paging, we must register our page fault handler.
     // Remember: This is a callback and will be fired later (at the time of a page fault)
-    CPU::ISR::register_interrupt_handler(ISR14, [](CPU::ISR::registers_t* regs, void* ctx){
+    register_interrupt_handler(ISR14, [](registers_t* regs, void* ctx){
         // Fire page fault implementation
         UiAOS::Memory::Paging::page_fault(regs, ctx);
     }, static_cast<void*>(this));
@@ -55,11 +54,11 @@ UiAOS::Memory::Paging::Paging(uint32_t mem_end_page)
 }
 
 bool UiAOS::Memory::Paging::set_directory(UiAOS::Memory::PageDirectory *dir) {
-    UiAOS::IO::Monitor::print_string("[set-directory] ");
-    UiAOS::IO::Monitor::print_hex(reinterpret_cast<uint32_t>(current_directory));
-    UiAOS::IO::Monitor::print_string(" => ");
-    UiAOS::IO::Monitor::print_hex(reinterpret_cast<uint32_t>(dir));
-    UiAOS::IO::Monitor::print_new_line();
+    // UiAOS::IO::Monitor::print_string("[set-directory] ");
+    // UiAOS::IO::Monitor::print_hex(reinterpret_cast<uint32_t>(current_directory));
+    // UiAOS::IO::Monitor::print_string(" => ");
+    // UiAOS::IO::Monitor::print_hex(reinterpret_cast<uint32_t>(dir));
+    // UiAOS::IO::Monitor::print_new_line();
     current_directory = dir;
     return false;
 }
@@ -85,7 +84,7 @@ void UiAOS::Memory::Paging::switch_page_directory(UiAOS::Memory::PageDirectory *
     asm volatile("mov %0, %%cr3":: "r"(&current_directory->tables_physical)); // Move page directory to cr3 register
 }
 
-void UiAOS::Memory::Paging::page_fault(UiAOS::CPU::ISR::registers_t* regs, void*)
+void UiAOS::Memory::Paging::page_fault(registers_t* regs, void*)
 {
     // A page fault has occurred.
     // The faulting address is stored in the CR2 register.
@@ -100,15 +99,15 @@ void UiAOS::Memory::Paging::page_fault(UiAOS::CPU::ISR::registers_t* regs, void*
     auto id = regs->err_code & 0x10;          // Caused by an instruction fetch?
 
     // Output an error message.
-    UiAOS::IO::Monitor::print_string("Page fault! ( ");
-    if (present) {UiAOS::IO::Monitor::print_string("present ");}
-    if (rw) {UiAOS::IO::Monitor::print_string("read-only ");}
-    if (us) {UiAOS::IO::Monitor::print_string("user-mode ");}
-    if (reserved) {UiAOS::IO::Monitor::print_string("reserved ");}
-    UiAOS::IO::Monitor::print_string(") at 0x");
-    UiAOS::IO::Monitor::print_hex(faulting_address);
-    UiAOS::IO::Monitor::print_new_line();
-    PANIC("Page fault");
+    // UiAOS::IO::Monitor::print_string("Page fault! ( ");
+    // if (present) {UiAOS::IO::Monitor::print_string("present ");}
+    // if (rw) {UiAOS::IO::Monitor::print_string("read-only ");}
+    // if (us) {UiAOS::IO::Monitor::print_string("user-mode ");}
+    // if (reserved) {UiAOS::IO::Monitor::print_string("reserved ");}
+    // UiAOS::IO::Monitor::print_string(") at 0x");
+    // UiAOS::IO::Monitor::print_hex(faulting_address);
+    // UiAOS::IO::Monitor::print_new_line();
+    // PANIC("Page fault");
 }
 
 
@@ -132,7 +131,7 @@ bool UiAOS::Memory::Page::alloc_frame(uint32_t idx , int is_kernel, int is_write
         if (idx == (uint32_t)-1)
         {
             // PANIC is just a macro that prints a message to the screen then hits an infinite loop.
-            PANIC("There is no free frames!");
+            // PANIC("There is no free frames!");
         }
 
         present = 1; // Mark it as present.

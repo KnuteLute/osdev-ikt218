@@ -8,6 +8,9 @@
 #include "common.h"
 #include "drivers/keyboard/timer.h"
 #include <cstdlib>
+#include "memory/paging.h"
+#include "../../boot/src/boot.h"
+#include "memory/kmalloc.h"
 
 
 #define BUFSIZE 2200
@@ -246,6 +249,32 @@ public:
 
 
 
+void printMemoryLayout()
+{
+    // Define the maximum memory address to display
+    constexpr uint32_t maxAddress = 0xFFFFFFFF;
+
+    // Start from the beginning of the memory
+    uint32_t address = 0;
+
+    // Iterate until the maximum address is reached
+    while (address < maxAddress)
+    {
+        // Check if the current address is aligned
+        bool aligned = (address % 4096 == 0);
+
+        // Get the size of the current memory block
+        uint32_t size = aligned ? 4096 : 1;
+
+        // Print the memory block details
+		terminal_writestring("Address: " + address );
+        // std::cout << "Address: " << address << ", Size: " << size << std::endl;
+
+        // Move to the next address
+        address += size;
+    }
+}
+
 
 
 
@@ -265,6 +294,22 @@ void kernel_main(void)
 	init_idt();
 	init_interrupts();
 	idt_load();
+
+	init_paging();
+
+	uint32_t alignedAddress = UiAOS::std::Memory::kmalloc_a(100);
+    
+    // Allocate 200 bytes of memory and retrieve the physical address
+    uint32_t physicalAddress;
+    uint32_t normalAddress = UiAOS::std::Memory::kmalloc_p(200, &physicalAddress);
+    
+    // Allocate 150 bytes of memory with alignment and retrieve the physical address
+    uint32_t alignedPhysicalAddress;
+    uint32_t alignedAddress2 = UiAOS::std::Memory::kmalloc_ap(150, &alignedPhysicalAddress);
+   
+    // Allocate 50 bytes of memory without alignment
+    uint32_t normalAddress2 = UiAOS::std::Memory::kmalloc(50);
+    
 	
 	
 	
@@ -312,7 +357,7 @@ void kernel_main(void)
     UiAOS::CPU::PIT::init_timer(1, [](registers_t*regs, void* context){
         auto* os = (OperatingSystem*)context;
         os->timer();
-		terminal_writestring("timer");
+		//terminal_writestring("timer");
     }, &os);
 
 
