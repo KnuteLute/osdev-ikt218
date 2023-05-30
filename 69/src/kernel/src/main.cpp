@@ -1,4 +1,4 @@
-
+#include "memory/pit.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -11,6 +11,9 @@
 #include "memory/paging.h"
 #include "../../boot/src/boot.h"
 #include "memory/kmalloc.h"
+#include "system.h"
+
+
 
 
 #define BUFSIZE 2200
@@ -234,6 +237,12 @@ public:
 		 
     }
 
+	int get_current_tick()
+	{
+		tick++;
+    	return tick;
+	}
+
     void timer() {
         tick++;
         if (tick % 100 == 0) {
@@ -245,6 +254,60 @@ public:
         }
 
     }
+	
+
+		void init_pit()
+	{
+		// Initialize the PIT by setting the desired divisor value
+		// Here you can write the necessary code to initialize the PIT
+		// For example, you can use the PIT_DEFAULT_DIVISOR to set the divisor value
+		uint16_t divisor = DIVIDER;
+		uint8_t low = (uint8_t)(divisor & 0xFF);
+		uint8_t high = (uint8_t)((divisor >> 8) & 0xFF);
+
+		// Send the command to set the PIT channel 0 divisor
+		outb(PIT_CMD_PORT, 0x36); // 0x36 is the command byte to set Channel 0 to mode 3 (square wave generator) and use the specified divisor
+
+		// Send the divisor value to the PIT channel 0 ports
+		outb(PIT_CHANNEL0_PORT, low);
+		outb(PIT_CHANNEL0_PORT, high);
+	}
+
+	void sleep_busy(uint32_t milliseconds)
+	{
+		uint32_t start_tick = get_current_tick();
+		uint32_t ticks_to_wait = milliseconds * TICKS_PER_MS;
+		uint32_t elapsed_ticks = 0;
+
+		while (elapsed_ticks < ticks_to_wait)
+		{
+			while (get_current_tick() == start_tick + elapsed_ticks)
+			{
+				// Do nothing (busy wait)
+			}
+			elapsed_ticks++;
+		}
+	}
+
+	void sleep_interrupt(int seconds)
+	{
+		
+		int current_tick = get_current_tick();
+		int ticks_to_wait = seconds;
+		int end_ticks = current_tick + ticks_to_wait;
+
+		while (current_tick < end_ticks)
+		{
+			current_tick = get_current_tick();
+			// Enable interrupts
+			asm volatile("sti");
+			
+			// Halt the CPU until the next interrupt
+			asm volatile("hlt");
+
+			
+		}
+	}
 };
 
 
@@ -279,6 +342,35 @@ void printMemoryLayout()
 
 
 
+uint32_t last_alloc = 0;
+uint32_t heap_end = 0;
+uint32_t heap_begin = 0;
+uint32_t pheap_begin = 0;
+uint32_t pheap_end = 0;
+uint8_t *pheap_desc = 0;
+uint32_t memory_used = 0;
+
+void init_kernel_memory(uint32_t* kernel_end)
+{
+    last_alloc = (uint32_t)kernel_end + 0x1000;
+    heap_begin = last_alloc;
+    pheap_end = 0x400000;
+    pheap_begin = pheap_end - (32 * 4096);
+    heap_end = pheap_begin;
+    memset((char *)heap_begin, 0, heap_end - heap_begin);
+    pheap_desc = (uint8_t *)UiAOS::std::Memory::kmalloc(32);
+    terminal_writestring("Kernel heap starts at 0x%x" + last_alloc);
+}
+
+void print_memory_layout()
+{
+    terminal_writestring("Memory used: %d bytes" + memory_used);
+    terminal_writestring("Memory free: %d bytes" + heap_end - heap_begin - memory_used);
+    terminal_writestring("Heap size: %d bytes" + heap_end - heap_begin);
+    terminal_writestring("Heap start: 0x%x" + heap_begin);
+    terminal_writestring("Heap end: 0x%x" + heap_end);
+    terminal_writestring("PHeap start: 0x%xPHeap end: 0x%x" + pheap_begin + pheap_end);
+}
 
 
 
@@ -287,6 +379,7 @@ void kernel_main(void)
 {
     terminal_initialize();
 
+	auto os = OperatingSystem(VGA_COLOR_RED);
 	
  
 	/* Newline support is left as an exercise. */
@@ -296,7 +389,10 @@ void kernel_main(void)
 	idt_load();
 
 	init_paging();
-
+	// Allocate 100 bytes of memory without alignment
+	uint32_t normalAddress1 = UiAOS::std::Memory::kmalloc(100);
+	
+	// Allocate 100 bytes of memory without alignment
 	uint32_t alignedAddress = UiAOS::std::Memory::kmalloc_a(100);
     
     // Allocate 200 bytes of memory and retrieve the physical address
@@ -310,6 +406,18 @@ void kernel_main(void)
     // Allocate 50 bytes of memory without alignment
     uint32_t normalAddress2 = UiAOS::std::Memory::kmalloc(50);
     
+
+
+	//((uint32_t*)normalAddress2);
+	//init_kernel_memory((uint32_t*)normalAddress2);
+	print_memory_layout();
+
+	os.init_pit();
+	terminal_writestring("start sleep_interrupt(one second)");
+	
+	os.sleep_interrupt(1000);
+	terminal_writestring("end sleep_interrupt(one second)");
+	print_new_line();
 	
 	
 	
@@ -317,7 +425,7 @@ void kernel_main(void)
 	terminal_writestring("Hello, you have now a GDT!");
 	print_new_line();
 	// Create operating system object
-    auto os = OperatingSystem(VGA_COLOR_RED);
+    
     os.init();
 
     // Do some printing!
@@ -380,8 +488,12 @@ void kernel_main(void)
 	asm volatile("sti");
 
 
+	terminal_writestring("start sleep_interrupt(one second)");
 	
-	
+	os.sleep_interrupt(1000);
+	terminal_writestring("end sleep_interrupt(one second)");
+	print_new_line();
+
 	while(1){}
 	
 }

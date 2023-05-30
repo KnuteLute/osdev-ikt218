@@ -180,6 +180,7 @@ file(GLOB_RECURSE OS_MODULE_KERNEL_SOURCES
         src/kernel/src/cpu/memory/*.c
         src/stdlib/src/bitset.cpp
         src/stdlib/src/exception.cpp
+        src/kernel/src/memory/*.cpp
         # src/kernel/src/common.cpp
         src/kernel/src/cpu/descriptor_table.asm
         # src/kernel/src/cpu/gdt.cpp
