@@ -162,7 +162,7 @@ void print_int(int data){
 	}
 }
 
-// Get code from panko, danke
+
 char hex_char(uint32_t val) {
     val &= 0xF; 
     if (val <= 9) {
@@ -219,7 +219,9 @@ class OperatingSystem {
     int tick = 0;
 
 public:
+bool key_bool = true;
     OperatingSystem(vga_color color) {
+	
 
 
     }
@@ -266,10 +268,10 @@ public:
     void timer() {
         tick++;
         if (tick % 100 == 0) {
-            terminal_writestring("(Every Second) Tick: ");
-			print_new_line();
-            print_int(tick);
-			terminal_writestring(" yoooo ");
+            // terminal_writestring("(Every Second) Tick: ");
+			// print_new_line();
+            // print_int(tick);
+			// terminal_writestring(" yoooo ");
              
         }
 
@@ -295,19 +297,17 @@ public:
 
 	void sleep_busy(int seconds)
 	{
+		key_bool = false;
 		int start_tick = get_current_tick();
 		int ticks_to_wait = seconds;
 		int elapsed_ticks = 0;
-		asm volatile("sti");
+		
 		while (elapsed_ticks < ticks_to_wait)
 		{
-			while (get_current_tick() == start_tick + elapsed_ticks)
-			{
-				// Do nothing (busy wait)
-			}
 			elapsed_ticks++;
 		}
-		asm volatile("sti");
+		key_bool = true;
+		
 	}
 
 	void sleep_interrupt(int seconds)
@@ -318,18 +318,17 @@ public:
 		int end_ticks = current_tick + ticks_to_wait;
 
 		// Enable interrupts
-		asm volatile("sti");
+		
 		while (current_tick < end_ticks)
 		{
-			
-			
+			// enables interrupts
+			asm volatile("sti");
 			// Halt the CPU until the next interrupt
 			asm volatile("hlt");
 			current_tick = get_current_tick();
 
 			
 		}
-		asm volatile("sti");
 	}
 };
 
@@ -402,13 +401,17 @@ void kernel_main(void)
 {
     terminal_initialize();
 
-	auto os = OperatingSystem(VGA_COLOR_RED);
+	auto os = OperatingSystem(VGA_COLOR_GREEN);
+	os.init();
 	
  
 	/* Newline support is left as an exercise. */
 	init_gdt();
+	terminal_writestring("Hello, you have now a GDT!");
+	print_new_line();
 	init_idt();
 	terminal_writestring("Hello, you have now a IDT!");
+	print_new_line();
 	init_interrupts();
 	idt_load();
 
@@ -438,33 +441,17 @@ void kernel_main(void)
 	//init_kernel_memory((uint32_t*)normalAddress2);
 	// print_memory_layout();
 
-	os.init_pit();
-	terminal_writestring("start sleep_interrupt(one second)");
 	
-	os.sleep_interrupt(1000);
-	terminal_writestring("end sleep_interrupt(one second)");
-	print_new_line();
-	
-
-	
-	print_new_line();
-	terminal_writestring("start busy_interrupt(one second)");
-	
-	os.sleep_busy(1000);
-	terminal_writestring("end busy_interrupt(one second)");
-	print_new_line();
 
 	
 	
 
-	terminal_writestring("Hello, you have now a GDT!");
-	print_new_line();
+	
 	// Create operating system object
     
-    os.init();
-
+    
     // Do some printing!
-    os.debug_print("Hello World!");
+    os.debug_print("Debug print!");
 	print_new_line();
 	
 
@@ -480,12 +467,12 @@ void kernel_main(void)
     }, (void*)&os);
 
     // Create some interrupt handler for 4
-	terminal_writestring("mmmmhh");
+	
     register_interrupt_handler(4,[](registers_t* regs, void* context){
         auto* os = (OperatingSystem*)context;
         os->interrupt_handler_4(*regs);
     }, (void*)&os);
-	terminal_writestring("hmmmm");
+	
 
 
     // Fire interrupts! Should trigger callback above
@@ -506,10 +493,13 @@ void kernel_main(void)
 
 	
     // Hook Keyboard
-	terminal_writestring("kommer inn");
+	
 	print_new_line();
     UiAOS::IO::Keyboard::hook_keyboard([](uint8_t scancode, void* context){
         auto* os = (OperatingSystem*)context;
+		if (!os->key_bool){
+			return;
+		}
         terminal_writestring("Keyboard Event: ");
 		terminal_putchar(UiAOS::IO::Keyboard::scancode_to_ascii(scancode));
         terminal_writestring(" (");
@@ -518,10 +508,28 @@ void kernel_main(void)
 		print_new_line();
         
     }, &os);
-	terminal_writestring("kommer ut");
+	
 	// Enable interrupts
 	asm volatile("sti");
 
+
+	os.init_pit();
+	terminal_writestring("start sleep_interrupt(one second)");
+	print_new_line();
+	
+	os.sleep_interrupt(10000);
+	terminal_writestring("end sleep_interrupt(one second)");
+	print_new_line();
+	
+
+	
+	print_new_line();
+	terminal_writestring("start busy_interrupt(one second)");
+	print_new_line();
+	
+	os.sleep_busy(1000);
+	terminal_writestring("end busy_interrupt(one second)");
+	print_new_line();
 
 	while(1){}
 	
