@@ -12,7 +12,7 @@
 #include "../../boot/src/boot.h"
 #include "memory/kmalloc.h"
 #include "system.h"
-
+#include "print.h"
 
 
 
@@ -162,6 +162,26 @@ void print_int(int data){
 	}
 }
 
+// Get code from panko, danke
+char hex_char(uint32_t val) {
+    val &= 0xF; 
+    if (val <= 9) {
+        return '0' + val;
+    } else {
+        return 'A' + (val - 10);
+    }
+}
+
+void print_hex(uint32_t d)
+{
+    terminal_writestring("0x");
+    for(int i = 28; i >= 0; i-=4)
+    {
+        terminal_putchar(hex_char(d>>i));
+    }
+
+}
+
 void print_new_line(){
 
 	terminal_column = 0;
@@ -273,12 +293,12 @@ public:
 		outb(PIT_CHANNEL0_PORT, high);
 	}
 
-	void sleep_busy(uint32_t milliseconds)
+	void sleep_busy(int seconds)
 	{
-		uint32_t start_tick = get_current_tick();
-		uint32_t ticks_to_wait = milliseconds * TICKS_PER_MS;
-		uint32_t elapsed_ticks = 0;
-
+		int start_tick = get_current_tick();
+		int ticks_to_wait = seconds;
+		int elapsed_ticks = 0;
+		asm volatile("sti");
 		while (elapsed_ticks < ticks_to_wait)
 		{
 			while (get_current_tick() == start_tick + elapsed_ticks)
@@ -287,6 +307,7 @@ public:
 			}
 			elapsed_ticks++;
 		}
+		asm volatile("sti");
 	}
 
 	void sleep_interrupt(int seconds)
@@ -296,17 +317,19 @@ public:
 		int ticks_to_wait = seconds;
 		int end_ticks = current_tick + ticks_to_wait;
 
+		// Enable interrupts
+		asm volatile("sti");
 		while (current_tick < end_ticks)
 		{
-			current_tick = get_current_tick();
-			// Enable interrupts
-			asm volatile("sti");
+			
 			
 			// Halt the CPU until the next interrupt
 			asm volatile("hlt");
+			current_tick = get_current_tick();
 
 			
 		}
+		asm volatile("sti");
 	}
 };
 
@@ -385,10 +408,13 @@ void kernel_main(void)
 	/* Newline support is left as an exercise. */
 	init_gdt();
 	init_idt();
+	terminal_writestring("Hello, you have now a IDT!");
 	init_interrupts();
 	idt_load();
 
 	init_paging();
+	terminal_writestring("Paging initialized");
+	print_new_line();
 	// Allocate 100 bytes of memory without alignment
 	uint32_t normalAddress1 = UiAOS::std::Memory::kmalloc(100);
 	
@@ -404,13 +430,13 @@ void kernel_main(void)
     uint32_t alignedAddress2 = UiAOS::std::Memory::kmalloc_ap(150, &alignedPhysicalAddress);
    
     // Allocate 50 bytes of memory without alignment
-    uint32_t normalAddress2 = UiAOS::std::Memory::kmalloc(50);
+    //uint32_t normalAddress2 = UiAOS::std::Memory::kmalloc(50);
     
 
 
 	//((uint32_t*)normalAddress2);
 	//init_kernel_memory((uint32_t*)normalAddress2);
-	print_memory_layout();
+	// print_memory_layout();
 
 	os.init_pit();
 	terminal_writestring("start sleep_interrupt(one second)");
@@ -419,6 +445,15 @@ void kernel_main(void)
 	terminal_writestring("end sleep_interrupt(one second)");
 	print_new_line();
 	
+
+	
+	print_new_line();
+	terminal_writestring("start busy_interrupt(one second)");
+	
+	os.sleep_busy(1000);
+	terminal_writestring("end busy_interrupt(one second)");
+	print_new_line();
+
 	
 	
 
@@ -431,7 +466,7 @@ void kernel_main(void)
     // Do some printing!
     os.debug_print("Hello World!");
 	print_new_line();
-	terminal_writestring("Hello, you have now a IDT!");
+	
 
 	// register_interrupt_handler(1,[](registers_t* regs, void* context){
     //     auto* os = (OperatingSystem*)context;
@@ -487,12 +522,6 @@ void kernel_main(void)
 	// Enable interrupts
 	asm volatile("sti");
 
-
-	terminal_writestring("start sleep_interrupt(one second)");
-	
-	os.sleep_interrupt(1000);
-	terminal_writestring("end sleep_interrupt(one second)");
-	print_new_line();
 
 	while(1){}
 	

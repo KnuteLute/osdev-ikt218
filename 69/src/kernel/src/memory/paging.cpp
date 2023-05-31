@@ -1,5 +1,6 @@
 #include "paging.h"
 #include "memory.h"
+#include "../print.h"
 
 #include "../../stdlib/include/bitset.h"
 #include "../../stdlib/include/exception.h"
@@ -54,11 +55,11 @@ UiAOS::Memory::Paging::Paging(uint32_t mem_end_page) : frames(mem_end_page, mem_
 }
 
 bool UiAOS::Memory::Paging::set_directory(UiAOS::Memory::PageDirectory *dir) {
-    // UiAOS::IO::Monitor::print_string("[set-directory] ");
-    // UiAOS::IO::Monitor::print_hex(reinterpret_cast<uint32_t>(current_directory));
-    // UiAOS::IO::Monitor::print_string(" => ");
-    // UiAOS::IO::Monitor::print_hex(reinterpret_cast<uint32_t>(dir));
-    // UiAOS::IO::Monitor::print_new_line();
+    terminal_writestring("[set-directory] ");
+    print_hex(reinterpret_cast<uint32_t>(current_directory));
+    terminal_writestring(" => ");
+    print_hex(reinterpret_cast<uint32_t>(dir));
+    print_new_line();
     current_directory = dir;
     return false;
 }
